@@ -118,6 +118,28 @@ class WebRuntimeTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual({json.loads(r.content)['method'] for r in self.requests},
                          {'initialize', 'notifications/initialized', 'tools/list', 'tools/call'})
 
+    async def test_chat_queue_emits_answer_and_source_links(self):
+        import async_question_to_answer
+        from async_queue import AsyncQueue
+        from control_flow_commands import CFC_CLIENT_DISCONNECTED
+
+        questions, responses = AsyncQueue(), AsyncQueue()
+        questions.enqueue(json.dumps({'message': 'public facts', 'user_id': 'alice'}))
+        questions.enqueue(CFC_CLIENT_DISCONNECTED)
+        with patch('async_question_to_answer.LLMChain', return_value=self.chain()):
+            await async_question_to_answer.loop(questions, responses)
+        self.assertEqual(json.loads(await responses.dequeue())['type'], 'processing')
+        answer = json.loads(await responses.dequeue())
+        self.assertEqual(answer['type'], 'answer')
+        self.assertIn('Fresh evidence', answer['message'])
+        self.assertEqual(answer['links'], ['https://example.org/source'])
+        self.assertEqual(json.loads(await responses.dequeue())['type'], 'disconnect_message')
+
+    async def test_synchronous_entrypoint(self):
+        result = await asyncio.to_thread(self.chain().invoke, 'sync caller')
+        self.assertIn('Fresh evidence', result['answer'])
+        self.assertEqual(result['links'], {'https://example.org/source'})
+
     async def test_concurrent_runs_same_chain_and_new_run_identity(self):
         chain = self.chain()
         await asyncio.gather(chain.ainvoke('conversation A'), chain.ainvoke('conversation B'))

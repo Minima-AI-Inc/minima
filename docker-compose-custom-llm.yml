@@ -54,6 +54,9 @@ services:
       - LLM_BASE_URL=${LLM_BASE_URL}
       - LLM_MODEL=${LLM_MODEL}
       - LLM_API_KEY=${LLM_API_KEY:-not-needed}
+      - MINIMA_ALLOW_WEB=${MINIMA_ALLOW_WEB:-false}
+      - MINIMA_WEB_SEARCH=${MINIMA_WEB_SEARCH:-parallel}
+      - PARALLEL_API_KEY=${PARALLEL_API_KEY:-}
       - LOCAL_FILES_PATH=${LOCAL_FILES_PATH}
       - CONTAINER_PATH=/usr/src/app/local_files/
     depends_on:

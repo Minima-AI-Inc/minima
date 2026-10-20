@@ -1,9 +1,8 @@
 import os
+import asyncio
 import logging
 from typing import Optional
 from dataclasses import dataclass
-from ollama_chain import OllamaChain, OllamaConfig
-from openai_chain import OpenAIChain, OpenAIConfig
 
 logger = logging.getLogger(__name__)
 
@@ -40,9 +39,11 @@ class LLMChain:
         # Select and initialize the appropriate chain implementation
         if self.config.use_custom_llm:
             logger.info("Initializing OpenAI-compatible LLM Chain")
+            from openai_chain import OpenAIChain
             self.chain = OpenAIChain()
         else:
             logger.info("Initializing Ollama LLM Chain")
+            from ollama_chain import OllamaChain
             self.chain = OllamaChain()
 
     def invoke(self, message: str, user_id: str = "default_user") -> dict:
@@ -59,3 +60,9 @@ class LLMChain:
                   Format: {"answer": str, "links": set} or {"error": str, "status": str}
         """
         return self.chain.invoke(message, user_id=user_id)
+
+    async def ainvoke(self, message: str, user_id: str = "default_user") -> dict:
+        """Use the async custom-LLM graph so web requests remain cancellable."""
+        if self.config.use_custom_llm:
+            return await self.chain.ainvoke(message, user_id=user_id)
+        return await asyncio.to_thread(self.chain.invoke, message, user_id=user_id)

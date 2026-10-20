@@ -65,7 +65,7 @@ async def loop(
             )
 
             # Process the query with user_id
-            result = llm_chain.invoke(message, user_id=user_id)
+            result = await llm_chain.ainvoke(message, user_id=user_id)
 
             # Send the answer
             response_queue.enqueue(

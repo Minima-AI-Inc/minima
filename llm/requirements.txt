@@ -16,3 +16,4 @@ qdrant-client
 uvicorn[standard]
 python-dotenv
 pydantic
+mcp>=1.10,<2

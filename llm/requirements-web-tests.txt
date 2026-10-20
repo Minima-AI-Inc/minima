@@ -1,0 +1,9 @@
+# Minimal custom-LLM dependencies for the scripted-model MCP integration tests.
+# Keep the existing langchain-community constraint from requirements.txt.
+langchain-community==0.2.17
+langchain-openai
+langchain-qdrant
+langgraph
+mcp>=1.10,<2
+requests
+fastapi==0.111.0

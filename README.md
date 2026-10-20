@@ -210,3 +210,47 @@ Also, you can run minima using **run.sh**.
 **For MCP usage, please be sure that your local machines python is >=3.10 and 'uv' installed.**
 
 Minima (https://github.com/dmayboroda/minima) is licensed under the Mozilla Public License v2.0 (MPLv2).
+
+### Web sources in Custom LLM mode
+
+The custom-LLM agent can search the web and read public pages with
+[Parallel Search MCP](https://docs.parallel.ai/integrations/mcp/search-mcp).
+Parallel is the default web provider, with no account or API key required;
+anonymous search uses Fast mode. Web access requires explicit permission.
+Keep it disabled when working with sensitive data or requiring local-only retrieval.
+
+To allow web tools, add this to `.env` and recreate the custom-LLM containers:
+
+```dotenv
+MINIMA_ALLOW_WEB=true
+```
+
+Use the existing `docker compose -f docker-compose-custom-llm.yml --env-file .env up --build`
+command, then ask a public-information question in the chat UI. The LLM can call
+`web_search` followed by `web_fetch`, use the returned excerpts in its answer, and
+return source URLs alongside document links. The model must support function calling.
+Each question is an independent research run, matching the existing per-question
+graph; related tool calls within that run share one opaque session ID.
+
+Granting web permission allows model-generated queries and URLs to leave your
+installation for `https://search.parallel.ai/mcp`. The model sees document context
+and is instructed to keep private content out of web calls, but this is not a data
+loss prevention boundary. Only enable it for data you permit the model to send
+externally. Ollama, the Minima MCP server, and ChatGPT integration are unaffected.
+
+Set `MINIMA_ALLOW_WEB=false` to revoke permission, or `MINIMA_WEB_SEARCH=none` to
+disable the provider, then recreate the containers. Neither setting makes web
+requests. An optional `PARALLEL_API_KEY` authenticates requests for higher limits;
+a configured key is never silently replaced with anonymous access after failure.
+Web calls have a 30-second timeout. Service errors, including free-tier limits,
+are returned to the model as tool failures so it can explain missing evidence.
+
+The web integration tests use a scripted model, the compiled agent graph and the
+real MCP HTTP client against a deterministic HTTP fixture. They do not need model
+weights, a GPU, Qdrant, an indexer, or inference credentials:
+
+```bash
+python -m venv /tmp/minima-web-tests
+/tmp/minima-web-tests/bin/pip install -r llm/requirements-web-tests.txt
+/tmp/minima-web-tests/bin/python -m unittest discover -s llm/tests -v
+```
